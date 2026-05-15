@@ -60,9 +60,13 @@
                     </ul>
                     <p style="margin-top: 1.5rem; color: var(--primary-accent); font-weight: 600;">Impacto: Quebra as barreiras de escala, tornando energia nuclear acessível para mercados antes inviáveis</p>
                 </div>
-                <div class="visual-block image-card">
-                    <img src="snow-reactor.png" alt="Reator Modular Avançado" class="section-image">
-                    <div class="stat-overlay">
+                <div class="visual-block image-card" style="position: relative;">
+                    <!-- Loading Overlay -->
+                    <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('geometria/reator_static.png'); background-size: cover; background-position: center; z-index: 10; transition: opacity 0.5s; border-radius: 12px;">
+                    </div>
+                    <!-- 3D Viewer Container -->
+                    <div class="online_3d_viewer" id="viewer-container" style="width: 100%; height: 450px; border-radius: 12px; overflow: hidden; background-color: #1e293b;" model="geometria/iter_0000_nofluid.step"></div>
+                    <div class="stat-overlay" style="pointer-events: none; z-index: 20;">
                         <span class="number">50</span>
                         <span class="label">MW Térmico</span>
                     </div>
@@ -78,32 +82,32 @@
                 <div class="card">
                     <div class="icon-box">🔒</div>
                     <h3>Segurança Intrínseca</h3>
-                    <p>Sistema de controle autônomo com IA que otimiza operação e mantém reator em estado seguro 24/7.</p>
+                    <p>Arquitetura com múltiplas camadas de defesa e características de segurança passiva; resfriamento por metal líquido e barreiras físicas que reduzem a necessidade de intervenções humanas e simplificam operações de emergência.</p>
                 </div>
                 <div class="card">
                     <div class="icon-box">⚡</div>
                     <h3>Multifuncional</h3>
-                    <p>Gera eletricidade, calor industrial, dessalina água e produz radioisótopos em uma única plataforma.</p>
+                    <p>Plataforma integrada capaz de fornecer eletricidade, calor industrial de alta qualidade, dessalinização e produção de radioisótopos, com trocadores térmicos dedicados que permitem operações simultâneas para diferentes aplicações.</p>
                 </div>
                 <div class="card">
                     <div class="icon-box">🌍</div>
                     <h3>Escalável Globalmente</h3>
-                    <p>Manufatura seriada reduz CAPEX em 70% vs reatores convencionais. Pronto para mercados internacionais.</p>
+                    <p>Design modular para manufatura seriada e transporte rodoviário/ferroviário, reduzindo CAPEX e prazos; escala por replicação de módulos padronizados, facilitando a entrada em mercados internacionais e regiões remotas.</p>
                 </div>
                 <div class="card">
                     <div class="icon-box">🧠</div>
                     <h3>IA & Big Data</h3>
-                    <p>Machine Learning prediz anomalias. Milhares de simulações neutrônicas alimentam otimização contínua.</p>
+                    <p>Sistemas de controle com aprendizado de máquina para detecção precoce de anomalias, otimização de desempenho e manutenção preditiva; modelos treinados com extensas simulações e telemetria operacional.</p>
                 </div>
                 <div class="card">
                     <div class="icon-box">♻️</div>
                     <h3>Zero Carbono</h3>
-                    <p>100% de emissão nula. Substitui diesel, carvão e gás direto na matriz energética global.</p>
+                    <p>Operação com emissões diretas nulas, projetada para substituir geradores fósseis em aplicações industriais e locais remotos, reduzindo significativamente a pegada de carbono das operações.</p>
                 </div>
                 <div class="card">
                     <div class="icon-box">🚀</div>
                     <h3>Deploy Rápido</h3>
-                    <p>Fabricada em fábrica, instalada em semanas, não anos. Pronta para comunidades remotas e polos industriais.</p>
+                    <p>Projetado para fabricação em ambiente controlado, transporte modular e integração padronizada no local; reduz os prazos de implantação de anos para semanas/meses, permitindo rápida disponibilização de energia para comunidades remotas e polos industriais.</p>
                 </div>
             </div>
         </div>
@@ -149,9 +153,8 @@
                 <div class="team-card">
                     <div class="team-role">Coordenador | Proponente</div>
                     <h3>Arthur Reis Martins</h3>
-                    <p class="team-expertise">Master's em Energia (UFABC) | Master's em Propulsão (ITA)</p>
-                    <p>CEO da DeepTech Inova Api. Dualidade rara: expertise técnica em micro reatores com partes móveis + experiência de negócios, estratégia de captação e navegação regulatória.</p>
-                    <a href="http://lattes.cnpq.br/0605171774782375" class="team-link" target="_blank">Currículo Lattes →</a>
+                    <p class="team-expertise">Mestre em Energia (UFABC) | CEO da Deep Tech Inova Api</p>
+                    <p>Coordenador e proponente do projeto. Atua na integração entre concepção técnica, estratégia de inovação e articulação institucional. Possui experiência em microrreatores com sistemas móveis, desenvolvimento tecnológico, captação de recursos e interfaces regulatórias aplicadas a tecnologias nucleares avançadas.</p>
                 </div>
                 <div class="team-card">
                     <div class="team-role">ASSESSORA TÉCNICO-CIENTÍFICA</div>
@@ -162,9 +165,8 @@
                 <div class="team-card">
                     <div class="team-role">Engenheiro de Prototipagem</div>
                     <h3>Joelton Dias dos Santos Junior</h3>
-                    <p class="team-expertise">Master's em Mecânica (UFABC) | Foguete Campeão Mundial</p>
-                    <p>Força de execução prática. Premiado em iniciação científica, campeão mundial em lançamento de foguetes com a equipe Rocket da UFABC. Liderará design mecânico, manufatura aditiva e construção de protótipos não-nucleares.</p>
-                    <a href="http://lattes.cnpq.br/4844552769449735" class="team-link" target="_blank">Currículo Lattes →</a>
+                    <p class="team-expertise">Mestre em Mecânica (UFABC) | Integrante de equipe campeã mundial em lançamento de foguetes</p>
+                    <p>Responsável pelo desenvolvimento mecânico, manufatura aditiva e construção de protótipos não nucleares. Possui experiência prática em projetos experimentais, iniciação científica e competições internacionais de foguetes, com atuação voltada à execução, fabricação e validação física de componentes.</p>
                 </div>
             </div>
             <div class="impact-box">
@@ -208,6 +210,7 @@
                     <span class="ods-text">Fome Zero e Agricultura Sustentável</span>
                 </div>
             </div>
+            <p class="ods-explain" style="margin-top:1.25rem; text-align:center; max-width:900px; margin-left:auto; margin-right:auto; color: #cbd5e1;">Nossa solução apoia o ODS 2 ao fornecer energia firme e térmica para irrigação e processamento local, integrar dessalinização em regiões semiáridas e viabilizar tecnologias de conservação (irradiação) e produção de insumos. Juntas, essas capacidades reduzem perdas pós‑colheita, ampliam produtividade e fortalecem a segurança alimentar de comunidades e agricultores familiares.</p>
             <p style="margin-top: 2rem; text-align: center; font-size: 1.1rem;">Desenvolvido sob o programa <strong>Catalisa ICT - Sebrae</strong></p>
         </div>
     </section>
@@ -216,6 +219,39 @@
         <p>&copy; 2026 Prometheus Nuclear Technologies. Pyr-50 - Reator Modular Avançado - Spin-off UFABC</p>
     </footer>
 
+    <style>
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/online-3d-viewer/build/engine/o3dv.min.js"></script>
+    <script type="text/javascript">
+        window.addEventListener('load', () => {
+            OV.SetExternalLibLocation('https://cdn.jsdelivr.net/npm/online-3d-viewer/build/libs');
+            OV.Init3DViewerElements();
+
+            // Fade out overlay when 3D model finishes loading
+            const viewerContainer = document.getElementById('viewer-container');
+            const overlay = document.getElementById('loading-overlay');
+            
+            const observer = new MutationObserver((mutations) => {
+                for (let mutation of mutations) {
+                    if (mutation.addedNodes.length > 0) {
+                        for (let node of mutation.addedNodes) {
+                            if (node.tagName === 'CANVAS') {
+                                setTimeout(() => {
+                                    overlay.style.opacity = '0';
+                                    setTimeout(() => overlay.style.display = 'none', 500);
+                                }, 1500); // Small delay to ensure render is visible
+                                observer.disconnect();
+                                return;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            observer.observe(viewerContainer, { childList: true });
+        });
+    </script>
     <script src="script.js"></script>
 </body>
 
