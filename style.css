@@ -714,6 +714,29 @@ a {
     z-index: 1;
 }
 
+.regulatory p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.roadmap-item {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(0,242,255,0.02));
+    border: 1px solid rgba(0,242,255,0.08);
+    padding: 1rem;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.roadmap-item strong { display:block; color:var(--primary-accent); margin-bottom:0.6rem; }
+.roadmap-item span { display:block; color: rgba(255,255,255,0.9); font-weight:700; }
+
 .goals-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -829,6 +852,22 @@ a {
     letter-spacing: 0.5px;
     color: rgba(255, 255, 255, 0.8);
     text-align: center;
+}
+
+.ods-desc {
+    margin-top: 0.8rem;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.45;
+    max-width: 320px;
+    text-align: center;
+    opacity: 0.95;
+}
+
+.ods-badge .ods-number,
+.ods-badge .ods-text,
+.ods-badge .ods-desc {
+    z-index: 2;
 }
 
 .container {
