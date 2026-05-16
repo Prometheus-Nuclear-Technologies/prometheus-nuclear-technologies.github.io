@@ -1,7 +1,5 @@
 (function(){
-  // Minimal viewer: supports .obj/.mtl and .glb, applies a single clipping plane controlled by the slider.
   const MODEL_URL = 'geometria/iter_0000_nofluid.glb';
-  const DEFAULT_CUT_RATIO = 0.5;
 
   function setOverlayMessage(text, isError){
     const o = document.getElementById('loading-overlay'); if(!o) return; if(!isError){ o.style.display='none'; return; }
@@ -9,27 +7,8 @@
   }
   function hideOverlay(){ const o=document.getElementById('loading-overlay'); if(!o) return; o.style.opacity='0'; setTimeout(()=>o.style.display='none',250); }
 
-  async function loadObjWithMtl(objUrl){
-    return new Promise((resolve,reject)=>{
-      try{
-        const mtlUrl = objUrl.replace(/\.obj$/i,'.mtl');
-        const mtlLoader = new THREE.MTLLoader();
-        mtlLoader.load(mtlUrl, (materials)=>{
-          materials.preload();
-          const objLoader = new THREE.OBJLoader(); objLoader.setMaterials(materials);
-          objLoader.load(objUrl, (obj)=>resolve(obj), null, (e)=>reject(e));
-        }, null, ()=>{
-          // no mtl, load obj directly
-          const objLoader = new THREE.OBJLoader();
-          objLoader.load(objUrl, (obj)=>resolve(obj), null, (e)=>reject(e));
-        });
-      }catch(err){ reject(err); }
-    });
-  }
-
   async function loadModel(url){
     const lower = url.toLowerCase();
-    if(lower.endsWith('.obj')) return await loadObjWithMtl(url);
     if(lower.endsWith('.glb') || lower.endsWith('.gltf')){
       return await new Promise((resolve,reject)=>{
         try{
@@ -38,18 +17,18 @@
         }catch(err){ reject(err); }
       });
     }
-    throw new Error('Formato não suportado: '+url);
+    throw new Error('Apenas GLB/GLTF são suportados nesta versão: '+url);
   }
 
-  function applyClipping(root, plane){
+  function applyClipping(root, planes){
+    const clipsArray = Array.isArray(planes) ? planes : [planes];
     root.traverse(node=>{
       if(!node.isMesh) return;
       const mats = Array.isArray(node.material)? node.material : [node.material];
-      for(const m of mats) if(m) m.clippingPlanes = [plane];
+      for(const m of mats) if(m) m.clippingPlanes = clipsArray;
     });
   }
 
-  // Create caps generator: intersect triangles with plane, stitch segments, triangulate and add cap meshes
   function createCapsGenerator(group){
     const caps = new THREE.Group(); group.add(caps);
     const tmp = new THREE.Vector3();
@@ -58,8 +37,13 @@
 
     function keyFor(v){ return `${v.x.toFixed(6)}|${v.y.toFixed(6)}|${v.z.toFixed(6)}`; }
 
-    function generate(plane){
+    function generate(planes){
       clear();
+      const planesArray = Array.isArray(planes) ? planes : [planes];
+      for(const plane of planesArray) generateForPlane(plane);
+    }
+
+    function generateForPlane(plane){
       const segs = [];
       const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
       group.traverse(node=>{
@@ -86,12 +70,10 @@
 
       if(segs.length===0) return;
 
-      // group segments by source mesh to avoid color mixing across different objects/materials
       const groups = new Map();
       for(const s of segs){ const id = s.mesh.uuid || s.mesh.id || 'm'; if(!groups.has(id)) groups.set(id, {mesh: s.mesh, segs: []}); groups.get(id).segs.push(s); }
 
       const loops = [];
-      // for each group, stitch its segments into loops separately
       for(const [id, grp] of groups.entries()){
         const adj = new Map();
         for(const s of grp.segs){ const ka=keyFor(s.a), kb=keyFor(s.b); if(!adj.has(ka)) adj.set(ka,[]); if(!adj.has(kb)) adj.set(kb,[]); adj.get(ka).push(s); adj.get(kb).push(s); }
@@ -181,7 +163,6 @@
     const key = new THREE.DirectionalLight(0x9fefff,1.4); key.position.set(500,300,800); scene.add(key);
 
     const group = new THREE.Group();
-    // GLTF returns {scene:...} while OBJ returns Object3D
     if(rootObj.scene) group.add(rootObj.scene); else group.add(rootObj);
     scene.add(group);
 
@@ -193,36 +174,59 @@
     camera.updateProjectionMatrix();
     controls.update();
 
-    const clipPlane = new THREE.Plane(new THREE.Vector3(-1,0,0), 0);
-    applyClipping(group, clipPlane);
-
-    // caps generator for OBJ meshes
+    // Create three clipping planes for DX (1D) and 3planes (3D) modes
+    const planeX = new THREE.Plane(new THREE.Vector3(-1,0,0), 0);
+    const planeY = new THREE.Plane(new THREE.Vector3(0,-1,0), 0);
+    const planeZ = new THREE.Plane(new THREE.Vector3(0,0,-1), 0);
+    
     const capsGen = createCapsGenerator(group);
-
-    function updateCutaway(ratio){
-      const cutX = box.min.x + size.x * ratio;
-      const planePoint = new THREE.Vector3(cutX, center.y, center.z);
-      clipPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(-1,0,0), planePoint);
-      try { capsGen.generate(clipPlane); } catch(e) { /* ignore */ }
+    
+    function updateCutaway(mode){
+      if(mode === 'dx'){
+        // Single plane cut (DX - one dimension)
+        const cutX = box.min.x + size.x * 0.50;
+        planeX.setFromNormalAndCoplanarPoint(new THREE.Vector3(-1,0,0), new THREE.Vector3(cutX, center.y, center.z));
+        applyClipping(group, [planeX]);
+        try { capsGen.generate([planeX]); } catch(e) { console.error(e); }
+      } else if(mode === 'threeplanes'){
+        // Three orthogonal planes for full corner cut
+        const cutX = box.min.x + size.x * 0.35;
+        const cutY = box.min.y + size.y * 0.35;
+        const cutZ = box.min.z + size.z * 0.35;
+        
+        planeX.setFromNormalAndCoplanarPoint(new THREE.Vector3(-1,0,0), new THREE.Vector3(cutX, center.y, center.z));
+        planeY.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,-1,0), new THREE.Vector3(center.x, cutY, center.z));
+        planeZ.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,0,-1), new THREE.Vector3(center.x, center.y, cutZ));
+        
+        applyClipping(group, [planeX, planeY, planeZ]);
+        try { capsGen.generate([planeX, planeY, planeZ]); } catch(e) { console.error(e); }
+      }
     }
 
     function animate(){ controls.update(); renderer.render(scene,camera); requestAnimationFrame(animate); }
-    animate(); updateCutaway(DEFAULT_CUT_RATIO); hideOverlay();
+    animate(); updateCutaway('dx'); hideOverlay();
 
     return { updateCutaway, resize: ()=>{ const nw=renderHost.clientWidth, nh=renderHost.clientHeight; renderer.setSize(nw,nh,false); camera.aspect = nw/nh; camera.updateProjectionMatrix(); } };
   }
 
   async function initViewer(){
-    const host = document.getElementById('viewer-container'); const slider = document.getElementById('cut-slider'); const cutValue = document.getElementById('cut-value'); const buttons = document.querySelectorAll('.viewer-button');
-    if(!host || !slider || !cutValue) return;
+    const host = document.getElementById('viewer-container');
+    const buttons = document.querySelectorAll('.viewer-button');
+    if(!host) return;
     try{
       const model = await loadModel(MODEL_URL);
       const viewer = buildScene(host, model);
-      const apply = (ratio)=>{ const n = Math.max(0.5, Math.min(0.95, ratio)); slider.value = n; cutValue.textContent = Math.round(n*100)+'%'; buttons.forEach(b=> b.classList.toggle('active', Number(b.dataset.cut)===Number(n.toFixed(3)))); viewer.updateCutaway(n); };
-      slider.addEventListener('input', (e)=> apply(Number(e.target.value)));
-      buttons.forEach(b=> b.addEventListener('click', ()=> apply(Number(b.dataset.cut))));
+      
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.cut;
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          viewer.updateCutaway(mode);
+        });
+      });
+      
       window.addEventListener('resize', ()=> viewer.resize());
-      apply(Number(slider.value));
     }catch(err){ console.error(err); setOverlayMessage('Erro ao carregar modelo: '+(err && err.message?err.message:err), true); }
   }
 
