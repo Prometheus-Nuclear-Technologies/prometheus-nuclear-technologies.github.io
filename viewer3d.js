@@ -73,28 +73,30 @@
           const addIf = (p1,p2,d1,d2)=>{ if((d1>=0)!==(d2>=0)){ const tt = d1/(d1-d2); tmp.lerpVectors(p1,p2,tt); return tmp.clone(); } return null; };
           const i1 = addIf(a,b,dA,dB), i2 = addIf(b,c,dB,dC), i3 = addIf(c,a,dC,dA);
           const ins = [i1,i2,i3].filter(x=>x!==null);
-          if(ins.length===2){ const A=ins[0], B=ins[1]; segs.push({a:A.clone(), b:B.clone(), color: meshColor.clone(), len: A.distanceTo(B)}); }
+          if(ins.length===2){ const A=ins[0], B=ins[1]; segs.push({a:A.clone(), b:B.clone(), color: meshColor.clone(), len: A.distanceTo(B), mesh: node}); }
         }
       });
 
       if(segs.length===0) return;
 
-      // build adjacency (map vertex key -> incident segments)
-      const adj = new Map();
-      for(const s of segs){ const ka=keyFor(s.a), kb=keyFor(s.b); if(!adj.has(ka)) adj.set(ka,[]); if(!adj.has(kb)) adj.set(kb,[]); adj.get(ka).push(s); adj.get(kb).push(s); }
+      // group segments by source mesh to avoid color mixing across different objects/materials
+      const groups = new Map();
+      for(const s of segs){ const id = s.mesh.uuid || s.mesh.id || 'm'; if(!groups.has(id)) groups.set(id, {mesh: s.mesh, segs: []}); groups.get(id).segs.push(s); }
 
       const loops = [];
-      const used = new Set();
-      for(const s of segs){ if(used.has(s)) continue; // begin a new loop from this segment
-        const loopPts = [s.a.clone(), s.b.clone()]; const usedSegs = [s]; used.add(s);
-        let cur = s.b.clone();
-        for(let iter=0;iter<10000;iter++){
-          const list = adj.get(keyFor(cur))||[]; let found=false;
-          for(const cand of list){ if(used.has(cand)) continue; used.add(cand); usedSegs.push(cand); const next = keyFor(cand.a)===keyFor(cur)? cand.b.clone() : cand.a.clone(); loopPts.push(next); cur = next; found=true; break; }
-          if(!found) break;
-          if(cur.distanceTo(loopPts[0])<1e-3) break;
+      // for each group, stitch its segments into loops separately
+      for(const [id, grp] of groups.entries()){
+        const adj = new Map();
+        for(const s of grp.segs){ const ka=keyFor(s.a), kb=keyFor(s.b); if(!adj.has(ka)) adj.set(ka,[]); if(!adj.has(kb)) adj.set(kb,[]); adj.get(ka).push(s); adj.get(kb).push(s); }
+        const used = new Set();
+        for(const s of grp.segs){ if(used.has(s)) continue; const loopPts=[s.a.clone(), s.b.clone()]; const usedSegs=[s]; used.add(s); let cur = s.b.clone();
+          for(let iter=0; iter<10000; iter++){
+            const list = adj.get(keyFor(cur))||[]; let found=false;
+            for(const cand of list){ if(used.has(cand)) continue; used.add(cand); usedSegs.push(cand); const next = keyFor(cand.a)===keyFor(cur)? cand.b.clone() : cand.a.clone(); loopPts.push(next); cur = next; found=true; break; }
+            if(!found) break; if(cur.distanceTo(loopPts[0])<1e-3) break;
+          }
+          if(loopPts.length>=3 && loopPts[0].distanceTo(loopPts[loopPts.length-1])<1e-3){ loopPts.pop(); loops.push({pts: loopPts, segs: usedSegs, mesh: grp.mesh}); }
         }
-        if(loopPts.length>=3 && loopPts[0].distanceTo(loopPts[loopPts.length-1])<1e-3){ loopPts.pop(); loops.push({pts: loopPts, segs: usedSegs}); }
       }
 
       const normal = plane.normal.clone().normalize();
