@@ -397,6 +397,74 @@ a {
     color: #fff;
 }
 
+.viewer-controls {
+    margin-top: 0.9rem;
+    padding: 0.95rem 1rem 0.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(0, 242, 255, 0.12);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+}
+
+.viewer-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 0.9rem;
+}
+
+.viewer-button {
+    appearance: none;
+    border: 1px solid rgba(0, 242, 255, 0.28);
+    background: rgba(0, 242, 255, 0.06);
+    color: #eafcff;
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.viewer-button:hover,
+.viewer-button.active {
+    background: linear-gradient(90deg, rgba(0, 242, 255, 0.2), rgba(0, 119, 255, 0.2));
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 24px rgba(0, 242, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.viewer-slider-wrap {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.92rem;
+}
+
+.viewer-slider-wrap label {
+    grid-column: 1 / -1;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.72);
+    font-size: 0.75rem;
+}
+
+.viewer-slider-wrap input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary-accent);
+}
+
+#cut-value {
+    min-width: 3.2rem;
+    text-align: right;
+    color: var(--primary-accent);
+    font-weight: 700;
+}
+
 /* Benefits Grid */
 .cards-grid {
     display: grid;

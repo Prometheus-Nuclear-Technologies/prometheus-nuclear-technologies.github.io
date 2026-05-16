@@ -62,10 +62,25 @@
                 </div>
                 <div class="visual-block image-card" style="position: relative;">
                     <!-- Loading Overlay -->
-                    <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('geometria/reator_static.png'); background-size: cover; background-position: center; z-index: 10; transition: opacity 0.5s; border-radius: 12px;">
+                    <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(3,8,16,0.96), rgba(8,23,41,0.96)); background-image: url('geometria/reator_static.png'); background-size: cover; background-position: center; z-index: 10; transition: opacity 0.5s; border-radius: 12px; display:flex; align-items:center; justify-content:center; text-align:center; padding:1.5rem;">
+                        <div style="max-width:320px; background: rgba(5,11,20,0.72); border: 1px solid rgba(0,242,255,0.25); backdrop-filter: blur(10px); padding: 1.25rem 1rem; border-radius: 14px;">
+                            <div style="font-size: 0.95rem; color: var(--primary-accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.35rem;">Carregando núcleo 3D</div>
+                            <div style="font-size: 0.92rem; color: rgba(255,255,255,0.82); line-height: 1.45;">Visualização STEP com corte de 3/4 ou 7/8 para inspeção interna do reator.</div>
+                        </div>
                     </div>
                     <!-- 3D Viewer Container -->
-                    <div class="online_3d_viewer" id="viewer-container" style="width: 100%; height: 450px; border-radius: 12px; overflow: hidden; background-color: #1e293b;" model="geometria/iter_0000_nofluid.step"></div>
+                    <div id="viewer-container" style="width: 100%; height: 450px; border-radius: 12px; overflow: hidden; background-color: #1e293b; position: relative;"></div>
+                    <div class="viewer-controls">
+                        <div class="viewer-toolbar">
+                            <button type="button" class="viewer-button active" data-cut="0.75">Corte 3/4</button>
+                            <button type="button" class="viewer-button" data-cut="0.875">Corte 7/8</button>
+                        </div>
+                        <div class="viewer-slider-wrap">
+                            <label for="cut-slider">Nível de corte</label>
+                            <input id="cut-slider" type="range" min="0.5" max="0.95" step="0.005" value="0.75">
+                            <span id="cut-value">75%</span>
+                        </div>
+                    </div>
                     <div class="stat-overlay" style="pointer-events: none; z-index: 20;">
                         <span class="number">50</span>
                         <span class="label">MW Térmico</span>
@@ -241,36 +256,10 @@
     <style>
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/online-3d-viewer/build/engine/o3dv.min.js"></script>
-    <script type="text/javascript">
-        window.addEventListener('load', () => {
-            OV.SetExternalLibLocation('https://cdn.jsdelivr.net/npm/online-3d-viewer/build/libs');
-            OV.Init3DViewerElements();
-
-            // Fade out overlay when 3D model finishes loading
-            const viewerContainer = document.getElementById('viewer-container');
-            const overlay = document.getElementById('loading-overlay');
-            
-            const observer = new MutationObserver((mutations) => {
-                for (let mutation of mutations) {
-                    if (mutation.addedNodes.length > 0) {
-                        for (let node of mutation.addedNodes) {
-                            if (node.tagName === 'CANVAS') {
-                                setTimeout(() => {
-                                    overlay.style.opacity = '0';
-                                    setTimeout(() => overlay.style.display = 'none', 500);
-                                }, 1500); // Small delay to ensure render is visible
-                                observer.disconnect();
-                                return;
-                            }
-                        }
-                    }
-                }
-            });
-            
-            observer.observe(viewerContainer, { childList: true });
-        });
-    </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/STLLoader.js"></script>
+    <script type="text/javascript" src="viewer3d.js"></script>
     <script src="script.js"></script>
 </body>
 
