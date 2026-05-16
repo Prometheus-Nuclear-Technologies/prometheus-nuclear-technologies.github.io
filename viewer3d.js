@@ -1,6 +1,6 @@
 (function(){
   // Minimal viewer: supports .obj/.mtl and .glb, applies a single clipping plane controlled by the slider.
-  const MODEL_URL = 'geometria/iter_0000_nofluid.obj';
+  const MODEL_URL = 'geometria/iter_0000_nofluid.glb';
   const DEFAULT_CUT_RATIO = 0.5;
 
   function setOverlayMessage(text, isError){
@@ -30,8 +30,15 @@
   async function loadModel(url){
     const lower = url.toLowerCase();
     if(lower.endsWith('.obj')) return await loadObjWithMtl(url);
-    // only OBJ supported per request
-    throw new Error('Apenas OBJ é suportado nesta versão: '+url);
+    if(lower.endsWith('.glb') || lower.endsWith('.gltf')){
+      return await new Promise((resolve,reject)=>{
+        try{
+          const loader = new THREE.GLTFLoader();
+          loader.load(url, (gltf)=> resolve(gltf), null, (e)=> reject(e));
+        }catch(err){ reject(err); }
+      });
+    }
+    throw new Error('Formato não suportado: '+url);
   }
 
   function applyClipping(root, plane){
