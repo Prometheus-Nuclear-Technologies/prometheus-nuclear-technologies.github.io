@@ -106,17 +106,53 @@
         for(const p of loop){ const r = p.clone().sub(origin); coords.push(r.dot(u), r.dot(v)); }
         const indices = earcut(coords);
         if(!indices || !indices.length) continue;
-        const positions = new Float32Array(loop.length*3);
-        for(let i=0;i<loop.length;i++){ const p = loop[i].clone().add(normal.clone().multiplyScalar(0.0008)); positions[i*3]=p.x; positions[i*3+1]=p.y; positions[i*3+2]=p.z; }
-        const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(positions,3)); geo.setIndex(indices); geo.computeVertexNormals();
+        const offset = normal.clone().multiplyScalar(0.0018);
+        const segSamples = [];
+        for(const s of Linfo.segs){
+          const color = s.color.clone();
+          const hsl = { h: 0, s: 0, l: 0 };
+          color.getHSL(hsl);
+          const steps = Math.max(3, Math.ceil((s.len || 1) * 4));
+          for(let step=0; step<=steps; step++){
+            const t = step / steps;
+            const p = s.a.clone().lerp(s.b, t).sub(origin);
+            segSamples.push({ x: p.dot(u), y: p.dot(v), color, weight: Math.max(0.25, s.len || 1), sat: hsl.s });
+          }
+        }
 
-        // Choose cap color = color of the object that contributes the largest total segment length to this loop
-        const totals = new Map();
-        for(const s of Linfo.segs){ const key = s.color.getHexString(); const L = s.len||1; totals.set(key, (totals.get(key)||0) + L); }
-        let bestKey=null, bestVal=0;
-        for(const [k,v] of totals.entries()){ if(v>bestVal){ bestVal=v; bestKey=k; } }
-        const col = bestKey? new THREE.Color(`#${bestKey}`) : new THREE.Color(0x0b1220);
-        const mat = new THREE.MeshStandardMaterial({ color: col, metalness:0.06, roughness:0.7, side: THREE.DoubleSide });
+        const pickColor = (x, y)=>{
+          const vote = new Map();
+          for(const sample of segSamples){
+            const dx = x - sample.x, dy = y - sample.y;
+            const dist = Math.max(dx*dx + dy*dy, 1e-4);
+            const key = sample.color.getHexString();
+            const weight = (sample.weight / dist) * (1 + sample.sat * 2.8);
+            vote.set(key, (vote.get(key) || 0) + weight);
+          }
+          let bestKey = '0b1220';
+          let bestVal = -Infinity;
+          for(const [key, val] of vote.entries()){
+            if(val > bestVal){ bestVal = val; bestKey = key; }
+          }
+          return new THREE.Color(`#${bestKey}`);
+        };
+
+        const positions = [];
+        const colors = [];
+        for(let i=0;i<indices.length;i++){
+          const p = loop[indices[i]].clone().add(offset);
+          const cx = coords[indices[i]*2];
+          const cy = coords[indices[i]*2+1];
+          const col = pickColor(cx, cy);
+          positions.push(p.x, p.y, p.z);
+          colors.push(col.r, col.g, col.b);
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geo.computeVertexNormals();
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, metalness:0.04, roughness:0.78, side: THREE.DoubleSide });
         caps.add(new THREE.Mesh(geo, mat));
       }
     }
@@ -142,7 +178,11 @@
 
     const box = new THREE.Box3().setFromObject(group); const size = new THREE.Vector3(), center = new THREE.Vector3(); box.getSize(size); box.getCenter(center);
     const radius = Math.max(size.x,size.y,size.z) * 0.6 || 100;
-    camera.position.copy(center).add(new THREE.Vector3(radius*1.9, radius*1.3, radius*1.05)); controls.target.copy(center); camera.updateProjectionMatrix(); controls.update();
+    camera.position.copy(center).add(new THREE.Vector3(radius*2.5, radius*1.7, radius*1.45));
+    controls.target.copy(center);
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+    controls.update();
 
     const clipPlane = new THREE.Plane(new THREE.Vector3(-1,0,0), 0);
     applyClipping(group, clipPlane);
