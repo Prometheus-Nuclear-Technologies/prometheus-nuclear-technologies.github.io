@@ -21,11 +21,24 @@
   }
 
   function applyClipping(root, planes){
-    const clipsArray = Array.isArray(planes) ? planes : [planes];
+    const clipsArray = Array.isArray(planes) ? planes : (planes ? [planes] : []);
     root.traverse(node=>{
       if(!node.isMesh) return;
       const mats = Array.isArray(node.material)? node.material : [node.material];
-      for(const m of mats) if(m) m.clippingPlanes = clipsArray;
+      for(const m of mats){
+        if(!m) continue;
+        if(clipsArray.length){
+          m.clippingPlanes = clipsArray;
+          // use intersection of planes so multiple planes cut the corner (AND)
+          m.clipIntersection = true;
+        } else {
+          // clear clipping
+          m.clippingPlanes = null;
+          m.clipIntersection = false;
+        }
+        // ensure material updates
+        m.needsUpdate = true;
+      }
     });
   }
 
@@ -175,9 +188,8 @@
     controls.update();
 
     // Create three clipping planes for DX (1D) and 3planes (3D) modes
-    const planeX = new THREE.Plane(new THREE.Vector3(-1,0,0), 0);
-    const planeY = new THREE.Plane(new THREE.Vector3(0,-1,0), 0);
-    const planeZ = new THREE.Plane(new THREE.Vector3(0,0,-1), 0);
+      const planeX = new THREE.Plane(new THREE.Vector3(1,0,0), 0);
+      const planeY = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
     
     const capsGen = createCapsGenerator(group);
     
@@ -189,17 +201,18 @@
         applyClipping(group, [planeX]);
         try { capsGen.generate([planeX]); } catch(e) { console.error(e); }
       } else if(mode === 'threeplanes'){
-        // Three orthogonal planes for full corner cut
-        const cutX = box.min.x + size.x * 0.35;
-        const cutY = box.min.y + size.y * 0.35;
-        const cutZ = box.min.z + size.z * 0.35;
+        // Three orthogonal planes cutting from the opposite corner (upper-right-front)
+            const cutX = box.max.x - size.x * 0.50;
+            const cutY = box.min.y + size.y * 0.50;
         
-        planeX.setFromNormalAndCoplanarPoint(new THREE.Vector3(-1,0,0), new THREE.Vector3(cutX, center.y, center.z));
-        planeY.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,-1,0), new THREE.Vector3(center.x, cutY, center.z));
-        planeZ.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,0,-1), new THREE.Vector3(center.x, center.y, cutZ));
+        // Use positive normals to remove the upper-right-front wedge
+          // plane pointing +X (cuts from right inward)
+          planeX.setFromNormalAndCoplanarPoint(new THREE.Vector3(-1,0,0), new THREE.Vector3(cutX, center.y, center.z));
+          // plane pointing +Y (cuts from bottom upward) to invert vertical side
+          planeY.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,-1,0), new THREE.Vector3(center.x, cutY, center.z));
         
-        applyClipping(group, [planeX, planeY, planeZ]);
-        try { capsGen.generate([planeX, planeY, planeZ]); } catch(e) { console.error(e); }
+        applyClipping(group, [planeX, planeY]);
+        try { capsGen.generate([planeX, planeY]); } catch(e) { console.error(e); }
       }
     }
 
