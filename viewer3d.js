@@ -79,16 +79,27 @@
 
       if(segs.length===0) return;
 
-      // build adjacency
+      // build adjacency (map vertex key -> incident segments)
       const adj = new Map();
       for(const s of segs){ const ka=keyFor(s.a), kb=keyFor(s.b); if(!adj.has(ka)) adj.set(ka,[]); if(!adj.has(kb)) adj.set(kb,[]); adj.get(ka).push(s); adj.get(kb).push(s); }
 
       const loops = [];
       const used = new Set();
-      for(const s of segs){ if(used.has(s)) continue; used.add(s); const pts=[s.a.clone(), s.b.clone()]; let cur = s.b.clone(); for(let iter=0;iter<10000;iter++){ const list = adj.get(keyFor(cur))||[]; let found=false; for(const cand of list){ if(used.has(cand)) continue; used.add(cand); const next = keyFor(cand.a)===keyFor(cur)? cand.b.clone() : cand.a.clone(); pts.push(next); cur = next; found=true; break; } if(!found) break; if(cur.distanceTo(pts[0])<1e-3) break; } if(pts.length>=3 && pts[0].distanceTo(pts[pts.length-1])<1e-3){ pts.pop(); loops.push(pts); } }
+      for(const s of segs){ if(used.has(s)) continue; // begin a new loop from this segment
+        const loopPts = [s.a.clone(), s.b.clone()]; const usedSegs = [s]; used.add(s);
+        let cur = s.b.clone();
+        for(let iter=0;iter<10000;iter++){
+          const list = adj.get(keyFor(cur))||[]; let found=false;
+          for(const cand of list){ if(used.has(cand)) continue; used.add(cand); usedSegs.push(cand); const next = keyFor(cand.a)===keyFor(cur)? cand.b.clone() : cand.a.clone(); loopPts.push(next); cur = next; found=true; break; }
+          if(!found) break;
+          if(cur.distanceTo(loopPts[0])<1e-3) break;
+        }
+        if(loopPts.length>=3 && loopPts[0].distanceTo(loopPts[loopPts.length-1])<1e-3){ loopPts.pop(); loops.push({pts: loopPts, segs: usedSegs}); }
+      }
 
       const normal = plane.normal.clone().normalize();
-      for(const loop of loops){
+      for(const Linfo of loops){
+        const loop = Linfo.pts;
         if(loop.length<3) continue;
         const origin = loop[0].clone(); let u = new THREE.Vector3(); u.crossVectors(normal, new THREE.Vector3(0,1,0)); if(u.lengthSq()<1e-6) u.crossVectors(normal,new THREE.Vector3(1,0,0)); u.normalize(); const v = new THREE.Vector3().crossVectors(normal,u).normalize();
         const coords = [];
@@ -98,9 +109,13 @@
         const positions = new Float32Array(loop.length*3);
         for(let i=0;i<loop.length;i++){ const p = loop[i].clone().add(normal.clone().multiplyScalar(0.0008)); positions[i*3]=p.x; positions[i*3+1]=p.y; positions[i*3+2]=p.z; }
         const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(positions,3)); geo.setIndex(indices); geo.computeVertexNormals();
-        // length-weighted color
-        let r=0,g=0,b=0,tot=0; for(const s of segs){ const L=s.len||1; r+=s.color.r*L; g+=s.color.g*L; b+=s.color.b*L; tot+=L; }
-        const col = new THREE.Color(0x0b1220); if(tot>0){ col.r=r/tot; col.g=g/tot; col.b=b/tot; }
+
+        // Choose cap color = color of the object that contributes the largest total segment length to this loop
+        const totals = new Map();
+        for(const s of Linfo.segs){ const key = s.color.getHexString(); const L = s.len||1; totals.set(key, (totals.get(key)||0) + L); }
+        let bestKey=null, bestVal=0;
+        for(const [k,v] of totals.entries()){ if(v>bestVal){ bestVal=v; bestKey=k; } }
+        const col = bestKey? new THREE.Color(`#${bestKey}`) : new THREE.Color(0x0b1220);
         const mat = new THREE.MeshStandardMaterial({ color: col, metalness:0.06, roughness:0.7, side: THREE.DoubleSide });
         caps.add(new THREE.Mesh(geo, mat));
       }
